@@ -4,10 +4,6 @@ import json
 
 from pprint import pprint
 
-# 8209208
-# https://oauth.vk.com/authorize?client_id=8209208&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=photos,offline&response_type=token&v=5.131&state=123456
-# ya_token = 'AQAAAABesRe7AADLW9k_fNfHvkzUgfj6Ku8y1VE'
-
 def read_token(filename):
     with open(filename, 'r') as file:
         return file.read().strip()
@@ -85,6 +81,14 @@ class YaUploader:
             'Authorization': 'OAuth {}'.format(self.token)
         }
 
+    def create_post_path(self, path):
+        put_url = 'https://cloud-api.yandex.net/v1/disk/resources'
+        headers = self.get_headers()
+        params = {'path': path}
+        path_request = requests.put(url=put_url, params=params, headers=headers)
+        logging.info('Catalog created on Yandex disc')
+        return path_request.status_code
+
     def post_request(self, url, disk_file_path):
         upload_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
         headers = self.get_headers()
@@ -104,12 +108,14 @@ if __name__ == '__main__':
     fotos = downloader.download_fotos_vk(id)
 
     ya_token = read_token('yatoken.txt')
+    ya_catalog = 'vkfotos2'
     json_string = []
     for foto in fotos:
-        disk_file_path = f'vkfotos/{foto.name}'
         url = foto.url
         logging.info('Fotos are about to be send to Yandex disc')
         uploader = YaUploader(ya_token)
+        uploader.create_post_path(ya_catalog)
+        disk_file_path = f'{ya_catalog}/{foto.name}'
         uploader.post_request(url, disk_file_path)
         json_string.append({'file_name': foto.name, 'size': foto.size})
     logging.info('Json file is to be created')
